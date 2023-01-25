@@ -1,0 +1,161 @@
+pragma solidity ^0.4.24;
+pragma experimental ABIEncoderV2;
+
+import "github.com/Arachnid/solidity-stringutils/src/strings.sol";
+
+contract Permissions{
+
+    using strings for *;  
+
+    //Conversion function for strings to integers
+   function st2num(string s) private returns (uint) {
+    bytes memory b = bytes(s);
+    uint result = 0;
+    for (uint i = 0; i < b.length; i++) { 
+        if (b[i] >= 48 && b[i] <= 57) {
+            result = result * 10 + (uint(b[i]) - 48); 
+        }
+    }
+    return result; 
+   }
+   
+   // This function checks the designation of the user and returns a boolean if they have the qualification
+   function Designation(string memory User, string memory File) private returns(bool){
+       var Throwaway = "..".toSlice();
+       var Throwaway2 = "..".toSlice();
+       bool MeetsCriteria = true;
+       var r = File.toSlice();
+       var q = User.toSlice();
+       //Checking each case (gt, lt, ge, le, eq) and changing the boolean to false if any case doesn't hold
+         if (r.startsWith("gt".toSlice())){
+            Throwaway = r.split("_".toSlice());
+            Throwaway = r.split(":".toSlice());
+            Throwaway2 = q.split(":".toSlice());
+            if(st2num(Throwaway2.toString())<=st2num(Throwaway.toString())){
+               MeetsCriteria = false;
+            }
+         }
+         else if (r.startsWith("ge".toSlice())){
+            Throwaway = r.split("_".toSlice());
+            Throwaway = r.split(":".toSlice());
+            Throwaway2 = q.split(":".toSlice());
+            if(st2num(Throwaway2.toString())<st2num(Throwaway.toString())){
+               MeetsCriteria = false;
+            }
+         }
+         else if (r.startsWith("eq".toSlice())){
+            Throwaway = r.split("_".toSlice());
+            Throwaway = r.split(":".toSlice());
+            Throwaway2 = q.split(":".toSlice());
+            if(st2num(Throwaway2.toString())!=st2num(Throwaway.toString())){
+               MeetsCriteria = false;
+            }
+         }
+         else if (r.startsWith("le".toSlice())){
+            Throwaway = r.split("_".toSlice());
+            Throwaway = r.split(":".toSlice());
+            Throwaway2 = q.split(":".toSlice());
+            if(st2num(Throwaway2.toString())>st2num(Throwaway.toString())){
+               MeetsCriteria = false;
+            }
+         }
+         else if (r.startsWith("lt".toSlice())){
+            Throwaway = r.split("_".toSlice());
+            Throwaway = r.split(":".toSlice());
+            Throwaway2 = q.split(":".toSlice());
+            if(st2num(Throwaway2.toString())>=st2num(Throwaway.toString())){
+               MeetsCriteria = false;
+            }
+         }
+        return (MeetsCriteria);
+   } 
+
+   // this function checks the company of the user and compares it to the file's requirements
+   function Company (string memory User, string memory File) private returns(bool){
+        var r = File.toSlice();
+        var q = User.toSlice();
+        var Throwaway = "..".toSlice();
+        var Throwaway2 = "..".toSlice();
+        bool MeetsCriteria = true;
+         if (r.startsWith("0".toSlice())){
+            Throwaway = r.split(":".toSlice());
+            Throwaway2 = q.split(":".toSlice());
+               if(st2num(Throwaway2.toString())!=st2num(Throwaway.toString())){
+               MeetsCriteria = false;
+               }
+         }
+         else if (r.startsWith("1".toSlice())){
+            Throwaway = r.split(":".toSlice());
+            Throwaway2 = q.split(":".toSlice());
+               if(st2num(Throwaway2.toString())!=st2num(Throwaway.toString())){
+               MeetsCriteria = false;
+               }
+         }
+        return(MeetsCriteria);
+   }
+
+   //This functions checks if the user is in an authorized department
+   function Department(string memory User, string memory File) private returns(bool){
+         var delim = "-".toSlice();
+        var r = File.toSlice();
+        var q = User.toSlice();
+         bool MeetsCriteria3 = false;
+         var Departments = new string[](r.count(delim) + 1);
+         for(uint i = 0; i < Departments.length; i++) {
+             Departments[i] = r.split(delim).toString();
+         }
+
+         for(i=0; i<Departments.length;i++) {
+            if(st2num(Departments[i]) == st2num(q.toString())){
+               MeetsCriteria3 = true;
+            }
+         }
+         return (MeetsCriteria3);
+   }
+
+   
+   function CheckPermissions(string memory UserAttributes, string memory FileAttributes) public returns(bool[] memory){
+
+      //splitting FileAttributes up into an array of strings at the --- delim
+      var q = FileAttributes.toSlice();
+      var delim = "---".toSlice();
+      var partsComp = new string[](q.count(delim) + 1);
+      for(uint i = 0; i < partsComp.length; i++) {
+      partsComp[i] = q.split(delim).toString();
+      }
+      var Checked = new bool[](partsComp.length);
+
+      //iterating through the arrays to check each file
+      for(uint k = 0; k < partsComp.length; k++){
+
+         q = UserAttributes.toSlice();
+         var r = partsComp[k].toSlice();
+         bool MeetsCriteria1;
+         bool MeetsCriteria2;
+         bool MeetsCriteria3;
+         var Throwaway = r.split(":".toSlice());
+         Throwaway = q.split(":".toSlice());
+         
+         MeetsCriteria1= Designation(q.toString(),r.toString());
+         Throwaway = r.split(":".toSlice());
+         Throwaway = q.split(":".toSlice());
+
+         MeetsCriteria2 = Company(q.toString(),r.toString());
+         Throwaway = r.split(":".toSlice());
+         Throwaway = q.split(":".toSlice());
+
+         MeetsCriteria3 = Department(q.toString(),r.toString());
+
+      
+         if(MeetsCriteria1 && MeetsCriteria2 && MeetsCriteria3){
+            Checked[k] = true;
+         }
+         else {
+            Checked[k] = false;
+         }
+      
+      }
+
+      return(Checked);
+   }  
+}
